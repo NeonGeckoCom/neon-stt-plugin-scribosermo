@@ -1,13 +1,14 @@
 import json
-from os.path import dirname, join, isfile
 from os import makedirs
+from os.path import dirname, join, isfile
+
 import numpy as np
 import requests
 import tflit
+import xdg
 from ds_ctcdecoder import Alphabet, Scorer, ctc_beam_search_decoder
 from ovos_plugin_manager.templates.stt import STT
 from ovos_utils.log import LOG
-import xdg
 
 
 class ScriboSermoSTT(STT):
@@ -15,10 +16,8 @@ class ScriboSermoSTT(STT):
         super().__init__(*args, **kwargs)
         lang = self.config.get("lang") or "en"
         self.lang = lang.split("-")[0]
-        self.checkpoint_file = self.config.get("model")
 
-        # TODO auto download model base on self.lang
-        # files are hosted in mediafire, need to mirror them in a github release
+        self.checkpoint_file = self.config.get("model") or self.download_checkpoint()
         if not self.checkpoint_file or not isfile(self.checkpoint_file):
             LOG.error("You need to provide a tflite model")
             LOG.info(
@@ -29,7 +28,7 @@ class ScriboSermoSTT(STT):
         if not self.ds_scorer_path or not isfile(self.ds_scorer_path):
             LOG.error("You need to provide a language model")
             LOG.info(
-                "download model from https://github.com/mozilla/DeepSpeech/releases/tag/v0.9.3")
+                "download model from https://gitlab.com/Jaco-Assistant/Scribosermo#pretrained-checkpoints-and-language-models")
             raise FileNotFoundError
 
         res_path = join(dirname(__file__), "res", lang)
@@ -55,18 +54,43 @@ class ScriboSermoSTT(STT):
 
         LOG.info(f"Scribosermo STT plugin loaded - model: {self.checkpoint_file}")
 
-    def download_scorer(self):
-        url = "https://github.com/mozilla/DeepSpeech/releases/download/v0.9.3/deepspeech-0.9.3-models.scorer"
+    @property
+    def base_folder(self):
         path = join(xdg.BaseDirectory.xdg_data_home, self.__class__.__name__)
         makedirs(path, exist_ok=True)
-        scorer = join(path, "deepspeech-0.9.3-models.scorer")
-        if not isfile(scorer):
-            LOG.info("Downloading deepspeech-0.9.3-models.scorer")
-            data = requests.get(url).content
-            with open(scorer, "wb") as f:
-                f.write(data)
-            LOG.debug(f"scorer downloaded: {scorer}")
-        return scorer
+        return path
+
+    def download_scorer(self):
+        # TODO more languages
+        if self.lang.startswith("en"):
+            url = "https://github.com/mozilla/DeepSpeech/releases/download/v0.9.3/deepspeech-0.9.3-models.scorer"
+            name = url.split("/")[-1]
+            scorer = join(self.base_folder, name)
+            if not isfile(scorer):
+                LOG.info(f"Downloading {name}")
+                data = requests.get(url).content
+                with open(scorer, "wb") as f:
+                    f.write(data)
+                LOG.debug(f"scorer downloaded: {scorer}")
+            return scorer
+
+    def download_checkpoint(self):
+        # TODO more languages
+        # TODO host in neon repos
+        models = {
+            "en": "https://github.com/NeonJarbas/neon-stt-plugin-scribosermo/releases/download/0.0.1/model_quantized.tflite"
+        }
+        if self.lang.startswith("en"):
+            url = models["en"]
+            name = "en_" + url.split("/")[-1]
+            ckp = join(self.base_folder, name)
+            if not isfile(ckp):
+                LOG.info(f"Downloading checkpoint: {name}")
+                data = requests.get(url).content
+                with open(ckp, "wb") as f:
+                    f.write(data)
+                LOG.debug(f"checkpoint downloaded: {ckp}")
+            return ckp
 
     def predict(self, audio):
         """Feed an audio signal with shape [1, len_signal]
