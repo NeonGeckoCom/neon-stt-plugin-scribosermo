@@ -1,12 +1,13 @@
 import json
-from os.path import dirname
-from os.path import join, isfile
-
+from os.path import dirname, join, isfile
+from os import makedirs
 import numpy as np
+import requests
 import tflit
 from ds_ctcdecoder import Alphabet, Scorer, ctc_beam_search_decoder
 from ovos_plugin_manager.templates.stt import STT
 from ovos_utils.log import LOG
+import xdg
 
 
 class ScriboSermoSTT(STT):
@@ -15,13 +16,16 @@ class ScriboSermoSTT(STT):
         lang = self.config.get("lang") or "en"
         self.lang = lang.split("-")[0]
         self.checkpoint_file = self.config.get("model")
+
+        # TODO auto download model base on self.lang
+        # files are hosted in mediafire, need to mirror them in a github release
         if not self.checkpoint_file or not isfile(self.checkpoint_file):
             LOG.error("You need to provide a tflite model")
             LOG.info(
                 "download model from https://gitlab.com/Jaco-Assistant/Scribosermo#pretrained-checkpoints-and-language-models")
             raise FileNotFoundError
 
-        self.ds_scorer_path = self.config.get("ds_scorer")
+        self.ds_scorer_path = self.config.get("ds_scorer") or self.download_scorer()
         if not self.ds_scorer_path or not isfile(self.ds_scorer_path):
             LOG.error("You need to provide a language model")
             LOG.info(
@@ -48,6 +52,21 @@ class ScriboSermoSTT(STT):
         #  Setup tflite environment
         self.model = tflit.Model(self.checkpoint_file)
         self.interpreter = self.model.interpreter
+
+        LOG.info(f"Scribosermo STT plugin loaded - model: {self.checkpoint_file}")
+
+    def download_scorer(self):
+        url = "https://github.com/mozilla/DeepSpeech/releases/download/v0.9.3/deepspeech-0.9.3-models.scorer"
+        path = join(xdg.BaseDirectory.xdg_data_home, self.__class__.__name__)
+        makedirs(path, exist_ok=True)
+        scorer = join(path, "deepspeech-0.9.3-models.scorer")
+        if not isfile(scorer):
+            LOG.info("Downloading deepspeech-0.9.3-models.scorer")
+            data = requests.get(url).content
+            with open(scorer, "wb") as f:
+                f.write(data)
+            LOG.debug(f"scorer downloaded: {scorer}")
+        return scorer
 
     def predict(self, audio):
         """Feed an audio signal with shape [1, len_signal]
