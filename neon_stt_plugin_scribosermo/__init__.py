@@ -188,12 +188,3 @@ class ScriboSermoSTT(STT):
         inference_end = timer() - inference_start
         LOG.info('Inference took %0.3fs for %0.3fs audio file.' % (inference_end, audio_length))
         return text
-
-
-if __name__ == "__main__":
-
-    stt = ScriboSermoSTT('de')
-    # print("Running transcription ...\n")
-    # test_wav_path = '/home/mary/PycharmProjects/neon-stt-plugin-scribosermo/neon_stt_plugin_scribosermo/tests/test_audio/de/guten_tag_female.wav'
-    # stt.execute(test_wav_path)
-    # print("FINISHED")
