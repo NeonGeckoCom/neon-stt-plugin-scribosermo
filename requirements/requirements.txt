@@ -1,0 +1,8 @@
+ds-ctcdecoder
+tflit
+ovos-plugin-manager>=0.0.1a7
+neon_sftp
+soundfile
+jiwer
+SpeechRecognition
+neon_utils
