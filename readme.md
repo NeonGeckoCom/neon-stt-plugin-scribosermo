@@ -7,6 +7,9 @@
 - get deepspeech scorer (deepspeech-0.9.3-models.scorer) from [here](https://github.com/mozilla/DeepSpeech/releases/download/v0.9.3/deepspeech-0.9.3-models.scorer)
 - get models from [here](https://gitlab.com/Jaco-Assistant/Scribosermo#pretrained-checkpoints-and-language-models)
 
+# Neon-sftp installation:
+git clone --single-branch --branch initial_structure https://github.com/NeonGeckoCom/neon-sftp.git
+
 # config
 
 ```json

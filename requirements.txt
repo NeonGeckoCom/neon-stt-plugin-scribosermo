@@ -1,3 +1,0 @@
-ds-ctcdecoder
-tflit
-ovos-plugin-manager>=0.0.1a7
