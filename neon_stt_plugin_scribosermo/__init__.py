@@ -3,7 +3,7 @@ from os.path import dirname
 from os.path import join, isfile
 
 import numpy as np
-import tflit
+import tflite_runtime.interpreter as tflite
 from ds_ctcdecoder import Alphabet, Scorer, ctc_beam_search_decoder
 from ovos_plugin_manager.templates.stt import STT
 from ovos_utils.log import LOG
@@ -46,8 +46,7 @@ class ScriboSermoSTT(STT):
             alphabet=self.ds_alphabet,
         )
         #  Setup tflite environment
-        self.model = tflit.Model(self.checkpoint_file)
-        self.interpreter = self.model.interpreter
+        self.interpreter = tflite.Interpreter(model_path=self.checkpoint_file)
 
     def predict(self, audio):
         """Feed an audio signal with shape [1, len_signal]
