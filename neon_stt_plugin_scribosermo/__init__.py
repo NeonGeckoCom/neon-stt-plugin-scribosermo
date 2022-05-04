@@ -13,7 +13,6 @@ from ovos_utils.log import LOG
 from ovos_utils.xdg_utils import xdg_data_home
 
 
-
 class ModelContainer:
     DEFAULT_MODELS = {
         "en": ("en-qnet15-quantized", "en-deepspeech"),
@@ -77,12 +76,14 @@ class ModelContainer:
                 checkpoint_file = download(checkpoint_file)
             # pre defined aliases
             elif checkpoint_file in self.URLS:
-                checkpoint_file = download(self.URLS[checkpoint_file])
+                checkpoint_file = download(self.URLS[checkpoint_file],
+                                           file_name=checkpoint_file + ".tflite")
 
-            if score_file.startswith("http"):
+            if scorer_file.startswith("http"):
                 scorer_file = download(scorer_file)
             elif scorer_file in self.URLS:
-                scorer_file = download(self.URLS[scorer_file])
+                scorer_file = download(self.URLS[scorer_file],
+                                       file_name=checkpoint_file + ".scorer")
 
         res_path = join(dirname(__file__), "res", lang)
         alphabet_json = join(res_path, "alphabet.json")
@@ -193,14 +194,15 @@ class ScriboSermoSTT(STT):
         return self.engine.predict_audio(audio, lang)
 
 
-def download(url):
+def download(url, file_name=None):
     base_path = join(xdg_data_home(), "scribosermo")
     makedirs(base_path, exist_ok=True)
 
-    if "mediafire.com" in url:
-        file_name = MF.GetName(url)
-    else:
-        file_name = url.split("/")[-1]
+    if not file_name:
+        if "mediafire.com" in url:
+            file_name = MF.GetName(url)
+        else:
+            file_name = url.split("/")[-1]
 
     model_path = join(base_path, file_name)
     if isfile(model_path):
@@ -221,15 +223,17 @@ def download(url):
 def download_default(lang="en"):
     lang = lang.split("-")[0].lower()
     # TODO custom exception for invalid lang
-    model_url, scorer_url = ModelContainer.DEFAULT_MODELS[lang]
-    model = download(ModelContainer.URLS[model_url])
-    scorer = download(ModelContainer.URLS[scorer_url])
+    model_name, scorer_name = ModelContainer.DEFAULT_MODELS[lang]
+    model = download(ModelContainer.URLS[model_name],
+                     file_name=model_name + ".tflite")
+    scorer = download(ModelContainer.URLS[scorer_name],
+                      file_name=model_name + ".scorer")
     return model, scorer
 
 
 def download_all():
     print(download_default("en"))
-    print(download_default("es"))
+    # print(download_default("es"))
     print(download_default("de"))
     print(download_default("fr"))
     print(download_default("it"))
