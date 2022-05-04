@@ -189,11 +189,6 @@ class ScriboSermoSTT(STT):
 
     def execute(self, audio, language=None):
         lang = language or self.lang
-        print( self.engine.predict_audio(audio, "en"))
-        print( self.engine.predict_audio(audio, "es"))
-        print( self.engine.predict_audio(audio, "fr"))
-        print( self.engine.predict_audio(audio, "de"))
-        print( self.engine.predict_audio(audio, "it"))
         return self.engine.predict_audio(audio, lang)
 
 
