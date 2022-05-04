@@ -1,5 +1,6 @@
 import json
 import multiprocessing as mp
+import shutil
 from os import makedirs
 from os.path import dirname, join, isfile
 
@@ -18,10 +19,7 @@ class ModelContainer:
         "en": ("en-qnet15-quantized", "en-deepspeech"),
         "de": ("de-d37cv-wer0066-quantized", "kenlm_de_all"),
         "fr": ("fr-d7cv-wer0110-quantized", "fr_pocolm_d7cv"),
-        #  "es": ("es-cv-d8cv-wer0100-quantized", "kenlm_es_n12"),
-        #  [ctc_beam_search_decoder.cpp:279] FATAL: "(alphabet.GetSize()+1) == (class_dim)" check failed.
-        #  Number of output classes in acoustic model does not match number of labels in the alphabet file.
-        #  Alphabet file must be the same one that was used to train the acoustic model.
+        "es": ("es-cv-d8cv-wer0100-quantized", "es_pocolm_d8cv"),
         "it": ("it-d5cv-wer0115-quantized", "it_pocolm_d5cv")
     }
     URLS = {
@@ -83,7 +81,7 @@ class ModelContainer:
                 scorer_file = download(scorer_file)
             elif scorer_file in self.URLS:
                 scorer_file = download(self.URLS[scorer_file],
-                                       file_name=checkpoint_file + ".scorer")
+                                       file_name=scorer_file + ".scorer")
 
         res_path = join(dirname(__file__), "res", lang)
         alphabet_json = join(res_path, "alphabet.json")
@@ -191,6 +189,11 @@ class ScriboSermoSTT(STT):
 
     def execute(self, audio, language=None):
         lang = language or self.lang
+        print( self.engine.predict_audio(audio, "en"))
+        print( self.engine.predict_audio(audio, "es"))
+        print( self.engine.predict_audio(audio, "fr"))
+        print( self.engine.predict_audio(audio, "de"))
+        print( self.engine.predict_audio(audio, "it"))
         return self.engine.predict_audio(audio, lang)
 
 
@@ -200,7 +203,7 @@ def download(url, file_name=None):
 
     if not file_name:
         if "mediafire.com" in url:
-            file_name = MF.GetName(url)
+            file_name = url.replace("/file", "").split("/")[-1]
         else:
             file_name = url.split("/")[-1]
 
@@ -212,7 +215,8 @@ def download(url, file_name=None):
     LOG.info(f"Downloading {url}")
 
     if "mediafire.com" in url:
-        return MF.Download(url, output=base_path)
+        dl = MF.Download(url, output=base_path)
+        shutil.move(dl, model_path)
     else:
         data = requests.get(url).content
         with open(model_path, "wb") as f:
@@ -227,13 +231,13 @@ def download_default(lang="en"):
     model = download(ModelContainer.URLS[model_name],
                      file_name=model_name + ".tflite")
     scorer = download(ModelContainer.URLS[scorer_name],
-                      file_name=model_name + ".scorer")
+                      file_name=scorer_name + ".scorer")
     return model, scorer
 
 
 def download_all():
     print(download_default("en"))
-    # print(download_default("es"))
+    print(download_default("es"))
     print(download_default("de"))
     print(download_default("fr"))
     print(download_default("it"))
