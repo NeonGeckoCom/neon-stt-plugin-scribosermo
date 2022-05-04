@@ -1,5 +1,21 @@
 #!/usr/bin/env python3
-from setuptools import setup
+import os
+
+from setuptools import setup, find_packages
+
+BASEDIR = os.path.abspath(os.path.dirname(__file__))
+
+
+def required(requirements_file):
+    """ Read requirements file and remove comments and empty lines. """
+    with open(os.path.join(BASEDIR, requirements_file), 'r') as f:
+        requirements = f.read().splitlines()
+        if 'MYCROFT_LOOSE_REQUIREMENTS' in os.environ:
+            print('USING LOOSE REQUIREMENTS!')
+            requirements = [r.replace('==', '>=').replace('~=', '>=') for r in requirements]
+        return [pkg for pkg in requirements
+                if pkg.strip() and not pkg.startswith("#")]
+
 
 PLUGIN_ENTRY_POINT = 'neon-stt-plugin-scribosermo=neon_stt_plugin_scribosermo:ScriboSermoSTT'
 setup(
@@ -10,9 +26,8 @@ setup(
     author='JarbasAi',
     author_email='jarbasai@mailfence.com',
     license='Apache-2.0',
-    packages=['neon_stt_plugin_scribosermo'],
-    install_requires=["ds-ctcdecoder", "tflit",
-                      "ovos-plugin-manager>=0.0.1a7"],
+    packages=find_packages(include=['neon*']),
+    install_requires=required("requirements.txt"),
     include_package_data=True,
     zip_safe=True,
     classifiers=[
@@ -33,5 +48,8 @@ setup(
         'Programming Language :: Python :: 3.6',
     ],
     keywords='mycroft ovos neon plugin stt',
-    entry_points={'mycroft.plugin.stt': PLUGIN_ENTRY_POINT}
+    entry_points={'mycroft.plugin.stt': PLUGIN_ENTRY_POINT,
+                  'console_scripts': [
+                      'scribosermo-modeldl=neon_stt_plugin_scribosermo:download_all'
+                  ]}
 )

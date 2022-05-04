@@ -1,3 +1,4 @@
 ds-ctcdecoder
-tflit
+tflite_runtime
 ovos-plugin-manager>=0.0.1a7
+mediafiredl
